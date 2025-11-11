@@ -1,0 +1,197 @@
+{
+  "name": "Lambda A - Convo init (Msg Sender)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e04b7f3b-e1aa-4389-b386-4572c9e3a13f",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        -48
+      ],
+      "id": "0dfae77d-f673-4308-8663-c35364c3380c",
+      "name": "Webhook",
+      "webhookId": "e04b7f3b-e1aa-4389-b386-4572c9e3a13f",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the incoming data from the webhook's body\nconst inputBody = $input.first().json.body;\n\n// Function to ensure phone number starts with +1 and is cleaned\nconst ensurePhonePrefix = (phoneNumber) => {\n  if (!phoneNumber) {\n    return phoneNumber; \n  }\n  // Remove all non-digit characters\n  const digitsOnly = phoneNumber.replace(/\\D/g, '');\n  if (digitsOnly === '') {\n    return null;\n  }\n  // Remove a leading '1' if it exists\n  const baseNumber = digitsOnly.replace(/^1/, '');\n  // Prepend the standard '+1'\n  return '+1' + baseNumber;\n};\n\n// --- START OF FIX ---\n\n// 1. Create a new payload by copying ALL fields from the input using the spread operator.\n// This gets agent_name, zip_code, beds, baths, message, etc.\nconst finalPayload = { ...inputBody };\n\n// 2. Flatten the 'availability' object into the main payload.\n// This copies all keys/values (e.g., weekdays_morning: true) into finalPayload.\nif (finalPayload.availability && typeof finalPayload.availability === 'object') {\n  Object.assign(finalPayload, finalPayload.availability);\n}\n\n// 3. Rename and transform the fields that need changing.\nfinalPayload.consumer_name = finalPayload.name;\nfinalPayload.consumer_phone = ensurePhonePrefix(finalPayload.phone);\nfinalPayload.agent_phone = ensurePhonePrefix(finalPayload.agent_phone); // Clean the agent phone too\n\n// 4. Rename 'address_line_1' to 'address_line'\nif (finalPayload.address_line_1 !== undefined) {\n  finalPayload.address_line = finalPayload.address_line_1;\n}\n\n// 5. Handle 'is_flexible' (converts string 'true'/'false' to boolean, just in case)\nif (typeof finalPayload.is_flexible === 'string') {\n  finalPayload.is_flexible = finalPayload.is_flexible === 'true';\n}\n\n// 6. Delete the old, original keys that you've renamed or flattened.\ndelete finalPayload.name;\ndelete finalPayload.phone;\ndelete finalPayload.availability;\ndelete finalPayload.address_line_1;\n\n// 7. Return the final, flattened, and renamed object.\nreturn [{\n  json: finalPayload\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        -176
+      ],
+      "id": "c84a61c3-4d3d-4231-afb6-c3b64e4e6785",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://j56j7detrzfpjhr7wqopy2tjj40wnbvo.lambda-url.us-west-2.on.aws/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"consumer_phone\": \"{{ $json.consumer_phone }}\",\n    \"consumer_name\": \"{{ $json.consumer_name }}\",\n    \"agent_name\": \"{{ $json.agent_name }}\",\n    \"agent_phone\": \"{{ $json.agent_phone }}\",\n    \"is_flexible\": \"{{ $json.is_flexible }}\",\n    \"message\": \"{{ $json.message }}\",\n    \"weekdays_morning\": {{ $json.weekdays_morning }},\n    \"weekdays_midday\": {{ $json.weekdays_midday }},\n    \"weekdays_afternoon\": {{ $json.weekdays_afternoon }},\n    \"weekdays_evening\": {{ $json.weekdays_evening }},\n    \"saturday_morning\": {{ $json.saturday_morning }},\n    \"saturday_midday\": {{ $json.saturday_midday }},\n    \"saturday_afternoon\": {{ $json.saturday_afternoon }},\n    \"saturday_evening\": {{ $json.saturday_evening }},\n    \"saturday_evening\": {{ $json.saturday_evening }},\n    \"sunday_morning\": {{ $json.sunday_morning }},\n    \"sunday_midday\": {{ $json.sunday_midday }},\n    \"sunday_afternoon\": {{ $json.sunday_afternoon }},\n    \"sunday_evening\": {{ $json.sunday_evening }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        336,
+        -48
+      ],
+      "id": "b08a993e-c0fe-4e42-b596-98786ec107de",
+      "name": "agent notifier"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://3zuqfxqw2hbrntsi25dqobmnxm0ijquy.lambda-url.us-west-2.on.aws/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"consumer_phone\": \"{{ $node[\"Code\"].json.consumer_phone }}\",\n    \"consumer_name\": \"{{ $node[\"Code\"].json.consumer_name }}\",\n    \"agent_name\": \"{{ $node[\"Code\"].json.agent_name }}\",\n    \"address_line\": \"{{ $node[\"Code\"].json.address_line }}\",\n    \"zip_code\": \"{{ $node[\"Code\"].json.zip_code }}\",\n    \"beds\": \"{{ $node[\"Code\"].json.beds }}\",\n    \"baths\": \"{{ $node[\"Code\"].json.baths }}\",\n    \"agent_phone\": \"{{ $node[\"Code\"].json.agent_phone }}\",\n    \"is_flexible\": \"{{ $node[\"Code\"].json.is_flexible }}\",\n    \"message\": \"{{ $node[\"Code\"].json.message }}\",\n    \"weekdays_morning\": {{ $node[\"Code\"].json.weekdays_morning }},\n    \"weekdays_midday\": {{ $node[\"Code\"].json.weekdays_midday }},\n    \"weekdays_afternoon\": {{ $node[\"Code\"].json.weekdays_afternoon }},\n    \"weekdays_evening\": {{ $node[\"Code\"].json.weekdays_evening }},\n    \"saturday_morning\": {{ $node[\"Code\"].json.saturday_morning }},\n    \"saturday_midday\": {{ $node[\"Code\"].json.saturday_midday }},\n    \"saturday_afternoon\": {{ $node[\"Code\"].json.saturday_afternoon }},\n    \"saturday_evening\": {{ $node[\"Code\"].json.saturday_evening }},\n    \"saturday_evening\": {{ $node[\"Code\"].json.saturday_evening }},\n    \"sunday_morning\": {{ $node[\"Code\"].json.sunday_morning }},\n    \"sunday_midday\": {{ $node[\"Code\"].json.sunday_midday }},\n    \"sunday_afternoon\": {{ $node[\"Code\"].json.sunday_afternoon }},\n    \"sunday_evening\": {{ $node[\"Code\"].json.sunday_evening }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        768,
+        -64
+      ],
+      "id": "44ca54fc-5d90-40ec-bbd6-b8e3455660dc",
+      "name": "three-way msg between agent & customer"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://24kbkwekq636aayj7fk5fdk5du0hjctb.lambda-url.us-west-2.on.aws/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"consumer_phone\": \"{{ $node[\"Code\"].json.consumer_phone }}\",\n    \"consumer_name\": \"{{ $node[\"Code\"].json.consumer_name }}\",\n    \"agent_name\": \"{{ $node[\"Code\"].json.agent_name }}\",\n    \"address_line\": \"{{ $node[\"Code\"].json.address_line }}\",\n    \"zip_code\": \"{{ $node[\"Code\"].json.zip_code }}\",\n    \"beds\": \"{{ $node[\"Code\"].json.beds }}\",\n    \"baths\": \"{{ $node[\"Code\"].json.baths }}\",\n    \"agent_phone\": \"{{ $node[\"Code\"].json.agent_phone }}\",\n    \"is_flexible\": \"{{ $node[\"Code\"].json.is_flexible }}\",\n    \"message\": \"{{ $node[\"Code\"].json.message }}\",\n    \"weekdays_morning\": {{ $node[\"Code\"].json.weekdays_morning }},\n    \"weekdays_midday\": {{ $node[\"Code\"].json.weekdays_midday }},\n    \"weekdays_afternoon\": {{ $node[\"Code\"].json.weekdays_afternoon }},\n    \"weekdays_evening\": {{ $node[\"Code\"].json.weekdays_evening }},\n    \"saturday_morning\": {{ $node[\"Code\"].json.saturday_morning }},\n    \"saturday_midday\": {{ $node[\"Code\"].json.saturday_midday }},\n    \"saturday_afternoon\": {{ $node[\"Code\"].json.saturday_afternoon }},\n    \"saturday_evening\": {{ $node[\"Code\"].json.saturday_evening }},\n    \"saturday_evening\": {{ $node[\"Code\"].json.saturday_evening }},\n    \"sunday_morning\": {{ $node[\"Code\"].json.sunday_morning }},\n    \"sunday_midday\": {{ $node[\"Code\"].json.sunday_midday }},\n    \"sunday_afternoon\": {{ $node[\"Code\"].json.sunday_afternoon }},\n    \"sunday_evening\": {{ $node[\"Code\"].json.sunday_evening }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1248,
+        -48
+      ],
+      "id": "22cf3ab2-916f-4562-904d-49eeca8090cb",
+      "name": "Internal notifier"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        544,
+        -176
+      ],
+      "id": "74baf61a-c99e-4947-8b42-1d35d7be0002",
+      "name": "Waiting for 2 sec",
+      "webhookId": "afd2365b-d102-4430-bee5-344ec1573f24"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        -176
+      ],
+      "id": "0d4cc317-b18a-40dc-a7a0-827b0391b062",
+      "name": "2 sec wait",
+      "webhookId": "c7a0bdf1-691f-495d-a4e2-338cd3185a39"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "agent notifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agent notifier": {
+      "main": [
+        [
+          {
+            "node": "Waiting for 2 sec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "three-way msg between agent & customer": {
+      "main": [
+        [
+          {
+            "node": "2 sec wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waiting for 2 sec": {
+      "main": [
+        [
+          {
+            "node": "three-way msg between agent & customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2 sec wait": {
+      "main": [
+        [
+          {
+            "node": "Internal notifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7b4a7349-5787-4247-a188-657cf3b22c6a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1783557a2e25aa367d619b18890e5a219f84c301ff96b8b72dc52d216166d0bd"
+  },
+  "id": "8AiPGZHdmbQXvwFx",
+  "tags": []
+}
