@@ -7,8 +7,8 @@ from twilio.base.exceptions import TwilioRestException
 
 # --- Twilio Credentials ---
 # Ensure these are set in your Lambda Environment Variables
-TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "AAAAAAAAAAAAAAAAAA")
-TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "bbbbbbbbbbbbbbb")
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "AAAA")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "bbbb")
 # Set this to your MMS‑enabled US/Canada long‑code (not the toll‑free number)
 TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "+1234567890")
 
@@ -176,8 +176,11 @@ def lambda_handler(event, context):
     agent_name     = body.get("agent_name")
     agent_phone    = body.get("agent_phone")
     
-    # This is required for your new message template
     address_line   = body.get("address_line") 
+    
+    # Extract beds and baths, defaulting to None if not present
+    beds           = body.get("beds")
+    baths          = body.get("baths")
     
     # Use "first selection" logic by default (True)
     use_first_selection = body.get("use_first_selection_logic", True)
@@ -253,16 +256,23 @@ def lambda_handler(event, context):
         # 3. Build the new message string
         greeting = f"Hi {consumer_name}, " if consumer_name else "Hi, "
         
+        # Build the property details line conditionally.
+        # This will be an empty string "" if beds or baths are missing/empty.
+        property_details = ""
+        if beds and baths:
+            property_details = f"\nProperty: {beds} Beds / {baths} Baths"
+        
         intro_message = (
             f"{greeting}congratulations.\n"
             f"I'm connecting you with {agent_name}, who'll be helping you with your cash offer. His phone number is {agent_phone}.\n\n"
             f"{agent_name} will visit your property at {address_line} on {appointment_time} and can often deliver an offer within 24 hours."
+            f"{property_details}"  # <-- This is the new, conditional part
         )
 
     else:
         # --- ORIGINAL TEMPLATE (Kept for future use) ---
         availability_part = _generate_availability_sentence(body)
-        greeting = f"Hi {consumer_name}, " if consumer_name else "" 
+        greeting = f"Hi {consumer_name}, " if consumer_name else ""
         
         intro_message = (
             f"{greeting}Congratulations! I'm connecting you with {agent_name}, "
