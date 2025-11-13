@@ -1,0 +1,390 @@
+{
+  "name": "Lambda B - Agent Add",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "280c044c-8a52-4ba4-b7b3-4d621df0f200",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        128,
+        -560
+      ],
+      "id": "d6dfdfaa-25e2-435a-be9b-732575038cd7",
+      "name": "Webhook",
+      "webhookId": "280c044c-8a52-4ba4-b7b3-4d621df0f200"
+    },
+    {
+      "parameters": {
+        "content": "- This flow triggers when a user replies to a message.\n- If the reply is \"Yes\", it adds Agent Santiago to the current conversation.\n- It then sends a final confirmation message to the user that an agent has been added to this conversation.\n",
+        "width": 384
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        -768
+      ],
+      "typeVersion": 1,
+      "id": "109fd5d3-6e14-4f7c-8e57-c296e18214d3",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f0241e71-7df2-4b6b-85c4-26f50fcec93a",
+              "name": "recipient_country",
+              "value": "={{ $json.headers[\"cf-ipcountry\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "c906575e-4f1b-43b5-9f04-b5680a77117e",
+              "name": "recipient_state",
+              "value": "={{ $json.body.ToState }}",
+              "type": "string"
+            },
+            {
+              "id": "20fa5e60-2fbb-4c1f-b4dd-3275e330c7ce",
+              "name": "sender_zip",
+              "value": "={{ $json.body.FromZip }}",
+              "type": "string"
+            },
+            {
+              "id": "8758b6e0-1ddf-449e-aaee-c8286fc79b40",
+              "name": "sender_state",
+              "value": "={{ $json.body.FromState }}",
+              "type": "string"
+            },
+            {
+              "id": "2190db26-7bea-42a5-abf8-07049bf6ced8",
+              "name": "sender_city",
+              "value": "={{ $json.body.FromCity }}",
+              "type": "string"
+            },
+            {
+              "id": "cf3b85f1-594c-4f5d-958d-97ce86071e68",
+              "name": "sender_country",
+              "value": "={{ $json.body.FromCountry }}",
+              "type": "string"
+            },
+            {
+              "id": "bfca7429-3d64-4a19-abc3-9d818d39a655",
+              "name": "reply_text",
+              "value": "={{ $json.body.Body }}",
+              "type": "string"
+            },
+            {
+              "id": "0cde8db4-e34b-4eee-add3-9cc562efa656",
+              "name": "message_sid",
+              "value": "={{ $json.body.SmsMessageSid }}",
+              "type": "string"
+            },
+            {
+              "id": "5ea34a09-6125-4845-91d0-ff51ff412b29",
+              "name": "recipient_number",
+              "value": "={{ $json.body.To }}",
+              "type": "string"
+            },
+            {
+              "id": "a43dae6b-9ae4-4646-a742-76469a433887",
+              "name": "sender_number",
+              "value": "={{ $json.body.From }}",
+              "type": "string"
+            },
+            {
+              "id": "7cc7f9d9-4ba8-4ede-8ec3-8d6a507753ae",
+              "name": "media_count",
+              "value": "={{ $json.body.NumMedia }}",
+              "type": "string"
+            },
+            {
+              "id": "6de036eb-e44b-4200-8b22-8d252db68e8f",
+              "name": "received_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        -560
+      ],
+      "id": "8f9f8509-d7a3-4451-aab6-64fe843dc7aa",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "datalake-landingzone-221490242148-us-west-2",
+        "fileName": "=hamza-twilio-replies-data/year={{ $now.toFormat('yyyy') }}/month={{ $now.toFormat('MM') }}/day={{ $now.toFormat('dd') }}/{{ $json.message_sid }}.json",
+        "binaryData": false,
+        "fileContent": "={{ JSON.stringify($json) }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -560
+      ],
+      "id": "3ee477ca-3628-40e5-95b9-50d24b628cff",
+      "name": "Upload a file",
+      "credentials": {
+        "aws": {
+          "id": "Vmevz7kdSctSfm6r",
+          "name": "AWS account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "datalake-landingzone-221490242148-us-west-2",
+        "fileName": "=prod-appointment-experiment-message-logs/year={{ $json.year }}/month={{ $json.month }}/day={{ $json.day }}/{{ $json.message_sid }}.json",
+        "binaryData": false,
+        "fileContent": "={{ JSON.stringify($json) }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        816,
+        -256
+      ],
+      "id": "f86352ee-1106-4c67-a86b-b327b23436b0",
+      "name": "Upload a file1",
+      "credentials": {
+        "aws": {
+          "id": "Vmevz7kdSctSfm6r",
+          "name": "AWS account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "38160252-338a-4137-a0f6-aaaddc115e8e",
+              "name": "conversation_sid",
+              "value": "={{ $json.body.ConversationSid }}",
+              "type": "string"
+            },
+            {
+              "id": "ffff0835-b961-4eb9-9273-19bd883b86e0",
+              "name": "customer_name",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "add8507b-afd5-4f32-8c12-614a215cd722",
+              "name": "customer_number",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c13211a5-4ab8-4ce8-9bc0-69ff8095565e",
+              "name": "agent_name",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "f38fa400-f83b-4daf-88dd-66c55d31bf86",
+              "name": "agent_phone",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "0bee99c7-2844-42cf-bf13-907c02f036c2",
+              "name": "address_line",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "dfd14c79-f436-4158-a1cf-69084c322870",
+              "name": "beds",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "7e90e3e0-17ca-4fac-841d-02abf88fe6d6",
+              "name": "baths",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "0286629e-cbc4-4262-9e71-225371ea37ab",
+              "name": "day",
+              "value": "={{ DateTime.fromISO($json.body.DateCreated).toFormat('dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "7a7b1028-eaa8-4538-8417-a71e093f59c3",
+              "name": "direction",
+              "value": "inbound",
+              "type": "string"
+            },
+            {
+              "id": "f353468e-2aa6-4526-bfc7-3b35414d69b9",
+              "name": "media_count",
+              "value": "0",
+              "type": "string"
+            },
+            {
+              "id": "53ebd649-50f5-48cc-8066-c3750722b838",
+              "name": "message_sid",
+              "value": "={{ $json.body.MessageSid }}",
+              "type": "string"
+            },
+            {
+              "id": "b6b3c8f0-86b9-4390-a037-8a0c09e0fdf5",
+              "name": "received_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "78f99568-d065-4bda-9344-6f9bfd719395",
+              "name": "recipient_country",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "54838f22-33ff-49a8-9f95-25012883e50e",
+              "name": "recipient_state",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "d16e2b6d-5c27-4ae5-a2b1-723d537817cb",
+              "name": "sender_city",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "8e6eb079-513a-490e-be8c-10b0f84c90ec",
+              "name": "sender_country",
+              "value": "={{ $json.headers[\"cf-ipcountry\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "8b60c09c-e930-4927-9cb1-e001f261bb27",
+              "name": "sender_number",
+              "value": "={{ $json.body.Author }}",
+              "type": "string"
+            },
+            {
+              "id": "6fad28c1-e44d-46f5-b126-6111568b30c0",
+              "name": "sender_state",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "9fcfaa75-20c7-40e1-9e4d-3f5177556cd3",
+              "name": "sender_zip",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "4f49ebcb-c02e-49fc-9987-30d010d0dde5",
+              "name": "text_send",
+              "value": "={{ $json.body.Body }}",
+              "type": "string"
+            },
+            {
+              "id": "11499183-646c-48d3-98b1-8320bb283fe2",
+              "name": "year",
+              "value": "={{ DateTime.fromISO($json.body.DateCreated).toFormat('yyyy') }}",
+              "type": "string"
+            },
+            {
+              "id": "a1257718-cc24-4231-9744-454a6ab5c80f",
+              "name": "delivery_status",
+              "value": "received",
+              "type": "string"
+            },
+            {
+              "id": "77baedaa-db43-4086-963e-1a82e7389e65",
+              "name": "month",
+              "value": "={{ DateTime.fromISO($json.body.DateCreated).toFormat('MM') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        -256
+      ],
+      "id": "ebd1e7f0-cb94-4f79-9fcc-ba71bb44c342",
+      "name": "Edit Fields1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Upload a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Upload a file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "757ca2f6-9904-47d4-a1d5-ffc467f2a4ce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1783557a2e25aa367d619b18890e5a219f84c301ff96b8b72dc52d216166d0bd"
+  },
+  "id": "Hz81YFw19WlDt71g",
+  "tags": []
+}
